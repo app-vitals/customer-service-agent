@@ -6,6 +6,7 @@ AI-powered voice assistant that handles phone calls through LiveKit SIP integrat
 
 - **Voice AI Assistant**: Powered by OpenAI GPT-4o-mini with ElevenLabs TTS and Deepgram STT
 - **Phone Integration**: Handles inbound/outbound calls via Twilio SIP trunks
+- **Voicemail Detection**: Automatically detects voicemail systems and leaves professional messages
 - **Noise Cancellation**: Enhanced audio processing for telephony applications
 - **Multi-language Support**: Voice activity detection with multilingual turn detection
 
@@ -58,8 +59,9 @@ uv run python agent.py dev
 
 The agent will:
 - Connect to your LiveKit room
-- Handle incoming phone calls via configured SIP trunks
-- Respond as a helpful assistant representing Dan and Dave's AI Consulting
+- Handle incoming/outgoing phone calls via configured SIP trunks
+- Automatically detect voicemail systems and leave appropriate messages
+- Respond as Sarah, representing Dan and Dave's AI Consulting in Tahoe, CA
 
 ## Testing
 
