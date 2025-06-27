@@ -109,7 +109,7 @@ class CustomerServiceAgent(Agent):
     ) -> AsyncIterable[llm.ChatChunk]:
         generation = self.get_current_trace().generation(
             name="llm_generation",
-            model="gpt-4o-mini",
+            model="gpt-4.1",
             input=openai.utils.to_chat_ctx(chat_ctx, cache_key=self.llm),
         )
         output = ""
@@ -196,7 +196,7 @@ async def connect(ctx: JobContext, timeout: float = 3.0, max_retries: int = 3) -
 async def entrypoint(ctx: JobContext):
     session = AgentSession(
         stt=deepgram.STT(),
-        llm=openai.LLM(model="gpt-4o-mini"),
+        llm=openai.LLM(model="gpt-4.1"),
         tts=elevenlabs.TTS(),
         vad=silero.VAD.load(
             activation_threshold=0.7,
