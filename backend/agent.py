@@ -1,10 +1,13 @@
 import asyncio
 import logging
+import os
 from collections.abc import AsyncIterable
 from datetime import UTC, datetime
+from pathlib import Path
 from uuid import uuid4
 
 from dotenv import load_dotenv
+from jinja2 import Environment, FileSystemLoader
 from langfuse import Langfuse
 from langfuse.client import StatefulClient
 from livekit.agents import (
@@ -39,6 +42,10 @@ load_dotenv()
 
 _langfuse = Langfuse()
 
+# Setup Jinja2 environment for templates
+template_dir = Path(__file__).parent / "prompts"
+jinja_env = Environment(loader=FileSystemLoader(template_dir))
+
 
 class CustomerServiceAgent(Agent):
     def __init__(self, ctx: JobContext) -> None:
@@ -50,15 +57,27 @@ class CustomerServiceAgent(Agent):
         # Determine call direction from room name
         is_outbound = ctx.room.name.startswith("outbound")
 
+        # Template context for rendering prompts
+        template_context = {
+            "customer_name": customer_name,
+            "service_type": service_type,
+        }
+
         if is_outbound:
             # Outbound call - agent is calling the customer
-            instructions = f"You are Sarah from Dan and Dave's AI Consulting in Tahoe, CA. You are calling {customer_name} about their {service_type}.\n\nAfter your initial greeting, listen for the response:\n\n• LIVE CUSTOMER: If they respond conversationally, have a normal business conversation about their service.\n\n• VOICEMAIL: If you hear voicemail prompts ('at the tone', 'leave a message', 'please record'), use the leave_voicemail tool. Provide a complete professional message including: your name (Sarah), company (Dan and Dave's AI Consulting in Tahoe), reason for calling ({service_type}), and request to call back.\n\nSpeak directly to the customer, not about them."
-            self.initial_prompt = "Greet the customer and introduce yourself as Sarah from Dan and Dave's AI Consulting calling about their service."
+            instructions_template = jinja_env.get_template("instructions_outbound.j2")
+            instructions = instructions_template.render(template_context)
+            
+            initial_prompt_template = jinja_env.get_template("initial_prompt_outbound.j2")
+            self.initial_prompt = initial_prompt_template.render(template_context)
             tools = [leave_voicemail]
         else:
             # Inbound call - customer is calling the company
-            instructions = "You are Sarah, a customer service representative for Dan and Dave's AI Consulting in Tahoe, CA. A customer has called and you need to help them.\n\nIntroduce yourself professionally and ask how you can help them today. Listen to their needs and provide helpful information about our AI consulting services, technical support, or connect them with the right person if needed.\n\nBe friendly, professional, and focused on solving their problem or answering their questions."
-            self.initial_prompt = "Answer the phone professionally and introduce yourself as Sarah from Dan and Dave's AI Consulting, then ask how you can help them today."
+            instructions_template = jinja_env.get_template("instructions_inbound.j2")
+            instructions = instructions_template.render(template_context)
+            
+            initial_prompt_template = jinja_env.get_template("initial_prompt_inbound.j2")
+            self.initial_prompt = initial_prompt_template.render(template_context)
             tools = []
 
         super().__init__(instructions=instructions, tools=tools)

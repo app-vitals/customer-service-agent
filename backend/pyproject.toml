@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi",
+    "jinja2>=3.1.6",
     "langfuse==2.60.8",
     "livekit-agents[deepgram,elevenlabs,openai,silero,turn-detector]",
     "python-dotenv",

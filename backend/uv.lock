@@ -317,6 +317,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "jinja2" },
     { name = "langfuse" },
     { name = "livekit-agents", extra = ["deepgram", "elevenlabs", "openai", "silero", "turn-detector"] },
     { name = "python-dotenv" },
@@ -331,6 +332,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi" },
+    { name = "jinja2", specifier = ">=3.1.6" },
     { name = "langfuse", specifier = "==2.60.8" },
     { name = "livekit-agents", extras = ["deepgram", "elevenlabs", "openai", "silero", "turn-detector"] },
     { name = "python-dotenv" },
