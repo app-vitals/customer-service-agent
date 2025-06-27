@@ -61,7 +61,7 @@ class CustomerService:
                     call_direction="outbound",
                     call_outcome="voicemail",
                     created_at=_days_ago(3),
-                    notes="annual maintenance scheduling"
+                    notes="annual maintenance scheduling",
                 )
             ],
         },
@@ -80,7 +80,7 @@ class CustomerService:
                     call_direction="outbound",
                     call_outcome="voicemail",
                     created_at=_days_ago(1),
-                    notes="water heater service reminder"
+                    notes="water heater service reminder",
                 )
             ],
         },
@@ -150,9 +150,14 @@ class CustomerService:
             call_history_text = "No recent calls"
         else:
             history_items = []
-            current_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            current_date = datetime.now().replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
             for call in customer_context.call_history:
-                days_ago = (current_date - call.created_at.replace(hour=0, minute=0, second=0, microsecond=0)).days
+                days_ago = (
+                    current_date
+                    - call.created_at.replace(hour=0, minute=0, second=0, microsecond=0)
+                ).days
                 day_text = "yesterday" if days_ago == 1 else f"{days_ago} days ago"
                 history_items.append(
                     f"We called {day_text} and left a {call.call_outcome} about {call.notes}"
