@@ -1,12 +1,15 @@
 # LiveKit Twilio Customer Service Agent
 
-AI-powered voice agent that handles phone calls through LiveKit SIP integration with Twilio, representing Dan and Dave's AI Consulting in Tahoe, CA.
+AI-powered voice agent that handles phone calls through LiveKit SIP integration with Twilio, representing Acme HVAC for customer service and maintenance scheduling.
 
 ## Features
 
 - **Dual Call Modes**: Automatically adapts behavior for inbound vs outbound calls
 - **Voice AI Agent**: Powered by OpenAI GPT-4o-mini with ElevenLabs TTS and Deepgram STT
-- **Voicemail Detection**: Automatically detects voicemail systems and leaves professional messages (outbound only)
+- **Customer Data Integration**: Dynamic customer lookup and context-aware conversations
+- **Template-Based Prompts**: XML-structured prompts with shared context
+- **Appointment Scheduling**: Focus on scheduling HVAC maintenance appointments
+- **Voicemail Detection**: Automatically detects voicemail systems and leaves professional messages
 - **Web Call Monitoring**: Real-time web interface for supervisors to join and monitor active calls
 - **Robust Connection**: Timeout handling and retry logic for reliable connections
 - **Phone Integration**: Handles calls via Twilio SIP trunks and LiveKit
@@ -75,12 +78,7 @@ cd backend
 uv run python agent.py dev
 ```
 
-The agent will:
-- Connect to LiveKit rooms with robust timeout/retry logic
-- Automatically detect call direction from room names (`inbound*` vs `outbound*`)
-- **Inbound calls**: Answer professionally and provide customer service
-- **Outbound calls**: Proactively contact customers with voicemail detection
-- Act as Sarah, representing Dan and Dave's AI Consulting in Tahoe, CA
+The agent will connect to LiveKit rooms with robust timeout/retry logic and act as Sarah from Acme HVAC. See the [Call Behavior](#call-behavior) section for detailed information about how the agent handles different call types.
 
 ### Start the Web Monitoring Interface
 
@@ -199,19 +197,58 @@ graph LR
 
 ## Call Behavior
 
-The agent automatically adapts its behavior based on room naming:
+The agent automatically adapts its behavior based on room naming format `{inbound|outbound}_{phone_number}_{random_str}`:
 
-### Inbound Calls (room name starts with `inbound`)
-- **Role**: Customer service representative
+### Inbound Calls (`inbound_{phone}_...`)
+- **Role**: Sarah from Acme HVAC customer service representative
 - **Greeting**: Professional introduction and "how can I help you?"
+- **Primary Objective**: Schedule appointments for annual HVAC maintenance
+- **Context**: Access to customer name, equipment type, last service date, available time windows
 - **Tools**: None (standard conversation only)
-- **Purpose**: Handle customer inquiries and support requests
+- **Purpose**: Handle customer inquiries and focus on appointment scheduling
 
-### Outbound Calls (room name starts with `outbound`)
-- **Role**: Proactive caller for service appointments/reminders
-- **Greeting**: Introduce self and reason for calling
+### Outbound Calls (`outbound_{phone}_...`)
+- **Role**: Sarah from Acme HVAC calling about maintenance due
+- **Greeting**: Introduce self and reason for calling (annual maintenance due)
+- **Primary Objective**: Schedule appointment for equipment maintenance
+- **Context**: Customer name, equipment type due for service, last service date, available time windows
 - **Tools**: Voicemail detection and automated message leaving
-- **Purpose**: Contact customers about specific services or appointments
+- **Purpose**: Proactively contact customers about annual maintenance scheduling
+
+## Architecture
+
+### Customer Service Integration
+
+The agent integrates with a `CustomerService` class that provides:
+
+- **Phone-based lookup**: `CustomerService.get_template_context(phone_number)`
+- **Demo data**: Currently returns consistent demo data (John Smith, furnace maintenance)
+- **Template variables**: Current date, last service date, available time windows, customer name, equipment type
+- **Future extensibility**: Structured to easily connect to real customer databases
+
+### Template System
+
+Prompts use XML-structured Jinja2 templates with shared context:
+
+**Shared Context** (`shared_context.j2`):
+```xml
+<role>You are Sarah from Acme HVAC.</role>
+<context>
+- Today's date: {{ current_date }}
+- Last service date: {{ last_service_date }}
+- Available time windows: {{ available_time_windows }}
+- Customer name: {{ customer_name }}
+- Equipment type: {{ equipment_type }}
+</context>
+<objective>Schedule appointments for annual HVAC maintenance...</objective>
+<general_instructions>...</general_instructions>
+```
+
+**Call-Specific Templates**:
+- `instructions_outbound.j2`: Outbound call handling with voicemail tools
+- `instructions_inbound.j2`: Inbound call customer service
+- `initial_prompt_outbound.j2`: Outbound greeting
+- `initial_prompt_inbound.j2`: Inbound greeting
 
 ## Web Call Monitoring
 
@@ -229,8 +266,10 @@ The web interface provides real-time monitoring capabilities for supervisors:
 - `GET /api/rooms` - Lists all active customer service rooms
 - `GET /api/join-token` - Generates access tokens for joining existing calls
 
-**Main Components:**
-- `backend/agent.py` - Voice AI agent with dual-mode behavior and robust connection handling
+### Main Components
+- `backend/agent.py` - Voice AI agent with dual-mode behavior, customer data integration, and robust connection handling
+- `backend/services/customer_service.py` - Customer data service with phone-based lookup and template context generation
+- `backend/prompts/` - XML-structured Jinja2 templates with shared context and call-specific instructions
 - `backend/api.py` - REST API for web interface and room management
 - `frontend/` - React web interface for call monitoring and supervision
 - `backend/scripts/setup_livekit_telephony.py` - Automated Twilio/LiveKit setup

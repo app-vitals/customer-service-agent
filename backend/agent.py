@@ -1,9 +1,9 @@
 import asyncio
 import logging
-import os
 from collections.abc import AsyncIterable
 from datetime import UTC, datetime
 from pathlib import Path
+from random import random
 from uuid import uuid4
 
 from dotenv import load_dotenv
@@ -35,6 +35,8 @@ from livekit.plugins import (
 )
 from livekit.plugins.turn_detector.english import EnglishModel
 
+from services.customer_service import CustomerService
+
 logger = logging.getLogger("customer_service_agent")
 logger.setLevel(logging.INFO)
 
@@ -49,40 +51,28 @@ jinja_env = Environment(loader=FileSystemLoader(template_dir))
 
 class CustomerServiceAgent(Agent):
     def __init__(self, ctx: JobContext) -> None:
-        # Hardcode customer data for testing
-        # Lookup customer and outbound call details using phone number.
-        customer_name = "John Smith"
-        service_type = "HVAC maintenance"
+        # Extract call direction and phone number from room name: "{inbound|outbound}_{phone_number}_{random_str}"
+        call_direction, phone_number, _ = ctx.room.name.split("_")
 
-        # Determine call direction from room name
-        is_outbound = ctx.room.name.startswith("outbound")
+        # Lookup customer data using phone number
+        template_context = CustomerService.get_template_context(phone_number)
 
-        # Template context for rendering prompts
-        template_context = {
-            "customer_name": customer_name,
-            "service_type": service_type,
-        }
+        # Load templates based on call direction
+        instructions_template = jinja_env.get_template(
+            f"instructions_{call_direction}.j2"
+        )
+        instructions = instructions_template.render(template_context)
 
-        if is_outbound:
-            # Outbound call - agent is calling the customer
-            instructions_template = jinja_env.get_template("instructions_outbound.j2")
-            instructions = instructions_template.render(template_context)
-            
-            initial_prompt_template = jinja_env.get_template("initial_prompt_outbound.j2")
-            self.initial_prompt = initial_prompt_template.render(template_context)
-            tools = [leave_voicemail]
-        else:
-            # Inbound call - customer is calling the company
-            instructions_template = jinja_env.get_template("instructions_inbound.j2")
-            instructions = instructions_template.render(template_context)
-            
-            initial_prompt_template = jinja_env.get_template("initial_prompt_inbound.j2")
-            self.initial_prompt = initial_prompt_template.render(template_context)
-            tools = []
+        initial_prompt_template = jinja_env.get_template(
+            f"initial_prompt_{call_direction}.j2"
+        )
+        self.initial_prompt = initial_prompt_template.render(template_context)
+
+        # Only outbound calls have voicemail tool
+        tools = [leave_voicemail] if call_direction == "outbound" else []
 
         super().__init__(instructions=instructions, tools=tools)
         self.ctx = ctx
-        self.is_outbound = is_outbound
         self.session_id = str(uuid4())
         self.current_trace = None
 
@@ -194,7 +184,7 @@ async def connect(ctx: JobContext, timeout: float = 3.0, max_retries: int = 3) -
                 logger.error("All connection attempts failed")
                 ctx.shutdown("connection_timeout")
                 return False
-            await asyncio.sleep(2.0)  # Wait before retry
+            await asyncio.sleep(random() + 1.0)  # Wait before retry
         except Exception as e:
             logger.error(f"Connection failed: {e}")
             ctx.shutdown("connection_failed")
@@ -208,7 +198,11 @@ async def entrypoint(ctx: JobContext):
         stt=deepgram.STT(),
         llm=openai.LLM(model="gpt-4o-mini"),
         tts=elevenlabs.TTS(),
-        vad=silero.VAD.load(),
+        vad=silero.VAD.load(
+            activation_threshold=0.7,
+            min_speech_duration=0.15,
+            min_silence_duration=0.8,
+        ),
         turn_detection=EnglishModel(),
     )
 
