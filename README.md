@@ -5,7 +5,7 @@ AI-powered voice agent that handles phone calls through LiveKit SIP integration 
 ## Features
 
 - **Dual Call Modes**: Automatically adapts behavior for inbound vs outbound calls
-- **Voice AI Agent**: Powered by OpenAI GPT-4o-mini with ElevenLabs TTS and Deepgram STT
+- **Voice AI Agent**: Powered by OpenAI GPT-4.1 with ElevenLabs TTS and Deepgram STT
 - **Customer Data Integration**: Dynamic customer lookup and context-aware conversations
 - **Template-Based Prompts**: XML-structured prompts with shared context
 - **Appointment Scheduling**: Focus on scheduling HVAC maintenance appointments
@@ -203,7 +203,7 @@ The agent automatically adapts its behavior based on room naming format `{inboun
 - **Role**: Sarah from Acme HVAC customer service representative
 - **Greeting**: Professional introduction and "how can I help you?"
 - **Primary Objective**: Schedule appointments for annual HVAC maintenance
-- **Context**: Access to customer name, equipment type, last service date, available time windows
+- **Context**: Access to customer name, equipment type, last service date, available time windows, call history
 - **Tools**: None (standard conversation only)
 - **Purpose**: Handle customer inquiries and focus on appointment scheduling
 
@@ -215,15 +215,12 @@ The agent automatically adapts its behavior based on room naming format `{inboun
 - **Tools**: Voicemail detection and automated message leaving
 - **Purpose**: Proactively contact customers about annual maintenance scheduling
 
-## Architecture
-
 ### Customer Service Integration
 
 The agent integrates with a `CustomerService` class that provides:
 
 - **Phone-based lookup**: `CustomerService.get_template_context(phone_number)`
-- **Demo data**: Currently returns consistent demo data (John Smith, furnace maintenance)
-- **Template variables**: Current date, last service date, available time windows, customer name, equipment type
+- **Demo data**: Currently returns consistent demo data for testing
 - **Future extensibility**: Structured to easily connect to real customer databases
 
 ### Template System
@@ -239,6 +236,7 @@ Prompts use XML-structured Jinja2 templates with shared context:
 - Available time windows: {{ available_time_windows }}
 - Customer name: {{ customer_name }}
 - Equipment type: {{ equipment_type }}
+- Call history: {{ call_history }}
 </context>
 <objective>Schedule appointments for annual HVAC maintenance...</objective>
 <general_instructions>...</general_instructions>
